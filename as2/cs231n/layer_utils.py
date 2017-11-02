@@ -35,6 +35,36 @@ def affine_relu_dropout_backward(dout, cache):
     return affine_relu_backward(dr_out, cache)
 
 
+def affine_batchnorm_relu_forward(x, w, b, bn_param, gamma=None, beta=None):
+    aout, acache = affine_forward(x, w, b)
+    all_caches = (acache,)
+    next_input = aout
+    N = aout.shape[0]
+    if beta is None:
+       beta = np.sum(aout, axis = 0)/N
+    if gamma is None:
+       gamma = np.sum((aout - beta)**2, axis=0)
+       gamma = np.sqrt(gamma)
+    bout,bcache = batchnorm_forward(next_input, gamma, beta, bn_param)
+    all_caches += (bcache,)
+    next_input = bout
+    rout, rcache = relu_forward(next_input)
+    next_input = rout
+    all_caches += (rcache,)
+    return next_input, all_caches
+
+
+def affine_batchnorm_relu_backward(dout, cache):
+    relu_cache = cache[-1]
+    relu_out = relu_backward(dout, relu_cache)
+    b_cache = cache[-2]
+    bout, dgamma, dbeta = batchnorm_backward(relu_out, b_cache)
+    af_cache = cache[-3]
+    dx,dw,db = affine_backward(bout, af_cache)
+    return dx,dw,db
+
+
+
 def affine_relu_backward(dout, cache):
     """
     Backward pass for the affine-relu convenience layer

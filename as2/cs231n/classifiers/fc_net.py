@@ -214,7 +214,11 @@ class FullyConnectedNet(object):
         self.bn_params = []
         if self.use_batchnorm:
             self.bn_params = [{'mode': 'train'} for i in range(self.num_layers - 1)]
-
+            self.forward = affine_batchnorm_relu_forward
+            self.backward = affine_batchnorm_relu_backward
+        else:
+            self.forward = affine_relu_forward
+            self.backward = affine_relu_backward
         # Cast all parameters to the correct datatype
         for k, v in self.params.items():
             self.params[k] = v.astype(dtype)
@@ -255,7 +259,10 @@ class FullyConnectedNet(object):
         for l_num in range(1, self.num_layers):
             W_label = 'W' + str(l_num)
             b_label = 'b' + str(l_num)
-            input, cache =self.forward(input, self.params[W_label], self.params[b_label])
+            if self.use_batchnorm:
+              input, cache =self.forward(input, self.params[W_label], self.params[b_label], self.bn_params[l_num - 1])
+            else: 
+              input, cache =self.forward(input, self.params[W_label], self.params[b_label])
             caches.append(cache)
         W_last_layer = 'W' + str(self.num_layers)
         b_last_layer = 'b' + str(self.num_layers)
@@ -292,9 +299,11 @@ class FullyConnectedNet(object):
         for l_num in range(self.num_layers - 1, 0, -1):
             W_name = 'W'+str(l_num)
             b_name = 'b'+str(l_num)
-            grad_out, dwi, dbi = self.backward(grad_out, caches[l_num - 1])
+            grad_out, dwi, dbi = self.backward(grad_out, caches[l_num - 1]) 
             grads[W_name] = dwi+self.reg*self.params[W_name]
             grads[b_name] = dbi
+            #grads['gamma'] = dgamma
+            #grads['beta'] = dbeta
             loss += 0.5*self.reg*np.sum(self.params[W_name]*self.params[W_name])
         ############################################################################
         #                             END OF YOUR CODE                             #
