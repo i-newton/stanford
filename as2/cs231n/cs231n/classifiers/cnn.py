@@ -50,25 +50,15 @@ class ThreeLayerConvNet(object):
         ############################################################################
         C, cH,cW = input_dim
         conv_shape = (num_filters, C, filter_size, filter_size)
-        import pdb; pdb.set_trace()
-        self.params['W1'] = np.random.randn(conv_shape, scale=weight_scale, dtype=dtype)
+        self.params['W1'] = np.random.normal(size=conv_shape, scale=weight_scale)
         self.params['b1'] = np.zeros((num_filters,), dtype=dtype)
-        pad = filter_size-1//2
-        self.conv_params = {
-            'stride': 1,
-            'pad': pad
-        }
-        self.pool_params = {
-            'pool_width': 2,
-            'pool_heught': 2,
-            'stride': 2
-        }
-        Hout = 1 + cH + 2 * pad - filter_size
-        Wout = 1 + cW + 2 * pad - filter_size
-        self.params['W2'] = np.random.randn(size=(F*Hout*Wout, hidden_dim), scale=weight_scale, dtype=dtype)
-        self.params['b2'] = np.zeros(size=(hidden_dim,), dtype=dtype)
-        self.params['W3'] = np.random.randn(size=(hidden_dim, num_classes), scale=weight_scale, dtype=dtype)
-        self.params['b3'] = np.zeros(size=(num_classes,), dtype=dtype)
+        self.filter_size = filter_size
+        Hout = cH//2
+        Wout = cW//2
+        self.params['W2'] = np.random.normal(size=(num_filters*Hout*Wout, hidden_dim), scale=weight_scale)
+        self.params['b2'] = np.zeros((hidden_dim,), dtype=dtype)
+        self.params['W3'] = np.random.normal(size=(hidden_dim, num_classes), scale=weight_scale)
+        self.params['b3'] = np.zeros((num_classes,), dtype=dtype)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -89,7 +79,7 @@ class ThreeLayerConvNet(object):
 
         # pass conv_param to the forward pass for the convolutional layer
         filter_size = W1.shape[2]
-        conv_param = {'stride': 1, 'pad': (filter_size - 1) // 2}
+        conv_param = {'stride': 1, 'pad': (self.filter_size - 1) // 2}
 
         # pass pool_param to the forward pass for the max-pooling layer
         pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
@@ -100,10 +90,12 @@ class ThreeLayerConvNet(object):
         # computing the class scores for X and storing them in the scores          #
         # variable.                                                                #
         ############################################################################
-        f1_out,cache1 = conv_relu_pool_forward(X,self.params['W1'], self.params['b1'], self.conv_params,
-                                        self.pool_params)
-        f2_out, cache2 = affine_relu_forward(f1_out, self.params['W2'], self.params['b2'])
-        scores, cache3 = affine_forward(f2_out, self.params['W3'], self.params['b3'])
+        f1_out, cache1 = conv_relu_pool_forward(X,W1,b1, conv_param,
+                                        pool_param)
+        N, F, H, W = f1_out.shape
+        f1_flat = f1_out.reshape(N, F*H*W)
+        f2_out, cache2 = affine_relu_forward(f1_flat, W2, b2)
+        scores, cache3 = affine_forward(f2_out, W3, b3)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -127,7 +119,8 @@ class ThreeLayerConvNet(object):
         dout2, dW2, db2 = affine_relu_backward(dout3, cache2)
         grads['W2'] = dW2 + self.reg * self.params['W2']
         grads['b2'] = db2
-        dout1, dW1, db1 = conv_relu_pool_backward(dout2, cache2)
+        dout2_conv = dout2.reshape((N,F,H,W))
+        dout1, dW1, db1 = conv_relu_pool_backward(dout2_conv, cache1)
         grads['W1'] = dW1 + self.reg * self.params['W1']
         grads['b1'] = db1
         ############################################################################
