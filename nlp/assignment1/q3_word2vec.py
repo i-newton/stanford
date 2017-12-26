@@ -2,6 +2,7 @@
 
 import numpy as np
 import random
+import numpy.linalg as LA
 
 from q1_softmax import softmax
 from q2_gradcheck import gradcheck_naive
@@ -13,11 +14,8 @@ def normalizeRows(x):
     Implement a function that normalizes each row of a matrix to have
     unit length.
     """
-
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
-
+    norm = LA.norm(x, axis=1)
+    x = x/norm[:,None]
     return x
 
 
@@ -31,10 +29,7 @@ def test_normalize_rows():
 
 
 def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
-    """ Softmax cost function for word2vec models
-
-    Implement the cost and gradients for one predicted word vector
-    and one target word vector as a building block for word2vec
+    """ target word vector as a building block for word2vec
     models, assuming the softmax prediction function and cross
     entropy loss.
 
@@ -58,7 +53,7 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     """
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+
     ### END YOUR CODE
 
     return cost, gradPred, grad
