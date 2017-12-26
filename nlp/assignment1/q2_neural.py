@@ -2,10 +2,13 @@
 
 import numpy as np
 import random
+import layers
 
 from q1_softmax import softmax
 from q2_sigmoid import sigmoid, sigmoid_grad
 from q2_gradcheck import gradcheck_naive
+
+
 
 
 def forward_backward_prop(data, labels, params, dimensions):
@@ -36,16 +39,18 @@ def forward_backward_prop(data, labels, params, dimensions):
     b2 = np.reshape(params[ofs:ofs + Dy], (1, Dy))
 
     ### YOUR CODE HERE: forward propagation
-    l1_linear = data.dot(W1) + b1
+    l1_linear, l1_cache = layers.affine_forward(data, W1, b1)
     l2_sigmoid = sigmoid(l1_linear)
-    l3_linear = l2_sigmoid.dot(W2) + b2
-    l4_softmax = softmax(l3_linear)
-    y_pred = np.log(l4_softmax)
-    total_loss = y_pred*labels
-    cross_entropy = -np.sum(total_loss)
-    cost = cross_entropy
-    ### YOUR CODE HERE: backward propagation
+    l3_linear, l3_cache = layers.affine_forward(l2_sigmoid, W2, b2)
+    lbl = np.argwhere(labels == 1)
+    cost, softmax_grad = layers.softmax_loss(l3_linear, lbl[:, 1])
 
+
+    ## YOUR CODE HERE: backward propagation
+    # backprop cross-entropy and softmax
+    l3_grad_x, gradW2, gradb2 = layers.affine_backward(softmax_grad, l3_cache)
+    l2_grad = l3_grad_x * sigmoid_grad(l2_sigmoid)
+    _,gradW1, gradb1 = layers.affine_backward(l2_grad, l1_cache)
     ### END YOUR CODE
 
     ### Stack gradients (do not modify)
