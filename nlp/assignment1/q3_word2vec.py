@@ -3,10 +3,12 @@
 import numpy as np
 import random
 import numpy.linalg as LA
+import layers
 
 from q1_softmax import softmax
 from q2_gradcheck import gradcheck_naive
 from q2_sigmoid import sigmoid, sigmoid_grad
+
 
 def normalizeRows(x):
     """ Row normalization function
@@ -53,7 +55,10 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     """
 
     ### YOUR CODE HERE
-
+    probs = predicted.dot(np.transpose(outputVectors))
+    cost, dSfm = layers.softmax_loss(probs, [target])
+    gradPred = dSfm.dot(outputVectors)
+    grad = dSfm[:, None].dot(probs)
     ### END YOUR CODE
 
     return cost, gradPred, grad
@@ -91,7 +96,13 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     indices.extend(getNegativeSamples(target, dataset, K))
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    correct_sgm = sigmoid(predicted.dot(outputVectors[target]))
+    correct_score = - np.log(correct_sgm)
+    neg_sample_vecs = outputVectors[indices]
+    neg_scgm = sigmoid(-predicted.dot(np.transpose(neg_sample_vecs)))
+    neg_lg = np.log(neg_scgm)
+    neg_score = np.sum(neg_lg)
+    cost = correct_score - neg_score
     ### END YOUR CODE
 
     return cost, gradPred, grad
